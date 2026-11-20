@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>MGSA Application Cost Optimization Dashboard — Independent Portfolio Exercise</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1B3A5C;--blue:#2E75B6;--purple:#5C3A7A;--teal:#0D6E6E;
+  --text:#1A1A1A;--text2:#595959;--border:#CCCCCC;
+  --bg:#F8F9FA;--bg2:#F2F2F2;
+  --rf:#F4CCCC;--rt:#A61C00;
+  --of:#FCE4D6;--ot:#C55A11;
+  --af:#FFF3CD;--at:#9C6500;
+  --gf:#D9EAD3;--gt:#1E6B3C;
+  --bf:#D6E4F0;--bt:#1B3A5C;
+  --pf:#EDE4F5;--pt:#5C3A7A;
+}
+body{font-family:Arial,Helvetica,sans-serif;font-size:14px;color:var(--text);background:#fff}
+
+/* ── HEADER ── */
+.pg-hdr{background:var(--navy);display:flex;flex-direction:column}
+.hdr-top{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 0}
+.hdr-org{font-size:11px;font-weight:700;color:rgba(255,255,255,.65);letter-spacing:.1em;text-transform:uppercase}
+.hdr-ref{font-size:11px;color:rgba(255,255,255,.4);letter-spacing:.04em}
+.hdr-main{padding:12px 24px 0}
+.hdr-title{font-size:26px;font-weight:700;color:#fff;letter-spacing:-.3px}
+.hdr-sub{font-size:13px;color:rgba(255,255,255,.65);margin-top:4px}
+
+/* ── PURE-CSS TABS ── */
+.tab-radios{display:none}
+.tab-bar{display:flex;padding:0 24px;gap:0;overflow-x:auto;margin-top:12px}
+.tab{padding:12px 20px;font-size:13px;font-weight:700;cursor:pointer;color:rgba(255,255,255,.5);border-bottom:3px solid transparent;white-space:nowrap;font-family:Arial,Helvetica,sans-serif;transition:color .15s,border-color .15s;user-select:none}
+.tab:hover{color:rgba(255,255,255,.85)}
+.panel{display:none;padding:24px}
+
+#t1:checked ~ .pg-hdr .tab[for="t1"],
+#t2:checked ~ .pg-hdr .tab[for="t2"],
+#t3:checked ~ .pg-hdr .tab[for="t3"],
+#t4:checked ~ .pg-hdr .tab[for="t4"],
+#t5:checked ~ .pg-hdr .tab[for="t5"],
+#t6:checked ~ .pg-hdr .tab[for="t6"],
+#t7:checked ~ .pg-hdr .tab[for="t7"]
+{color:#fff;border-bottom-color:rgba(255,255,255,.9)}
+
+#t1:checked ~ #p1,
+#t2:checked ~ #p2,
+#t3:checked ~ #p3,
+#t4:checked ~ #p4,
+#t5:checked ~ #p5,
+#t6:checked ~ #p6,
+#t7:checked ~ #p7
+{display:block}
+
+/* ── METRIC CARDS ── */
+.mrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px}
+.mc{background:var(--bg);border:.5px solid var(--border);border-radius:6px;padding:14px 16px}
+.ml{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:4px}
+.mv{font-size:24px;font-weight:700}
+.ms{font-size:11px;color:var(--text2);margin-top:3px}
+
+/* ── SECTION TITLE ── */
+.st{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);margin-bottom:10px}
+
+/* ── BADGES ── */
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:3px;white-space:nowrap}
+.bc{background:var(--rf);color:var(--rt)}
+.bh{background:var(--of);color:var(--ot)}
+.bm{background:var(--af);color:var(--at)}
+.bg{background:var(--gf);color:var(--gt)}
+.bp{background:var(--bf);color:var(--bt)}
+.bpu{background:var(--pf);color:var(--pt)}
+
+/* ── TABLES ── */
+.tw{overflow-x:auto;border:.5px solid var(--border);border-radius:6px;margin-bottom:16px}
+.tw.sh{max-height:460px;overflow-y:auto}
+.dt{width:100%;border-collapse:collapse;font-size:12px}
+.dt th{background:var(--navy);color:#fff;padding:9px 10px;font-weight:700;font-size:11px;text-align:left;position:sticky;top:0;z-index:2;white-space:nowrap;letter-spacing:.05em;text-transform:uppercase}
+.dt td{padding:8px 10px;border-bottom:.5px solid var(--border);vertical-align:top}
+.dt tr:last-child td{border-bottom:none}
+.dt tr:hover td{background:var(--bg2)}
+.dt td.ctr{text-align:center;vertical-align:middle}
+.dt td.num{text-align:right;font-variant-numeric:tabular-nums;vertical-align:middle}
+.dt td.mid{vertical-align:middle}
+
+/* ── LAYOUT ── */
+.cg{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.cg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
+.cb{background:var(--bg);border:.5px solid var(--border);border-radius:6px;padding:14px;margin-bottom:16px}
+.cb0{background:var(--bg);border:.5px solid var(--border);border-radius:6px;padding:14px;margin-bottom:0}
+
+/* ── CARDS ── */
+.card{background:#fff;border:.5px solid var(--border);border-left:4px solid;border-radius:6px;padding:12px 14px;margin-bottom:10px}
+.card:last-child{margin-bottom:0}
+.card-hdr{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px}
+.card-title{font-size:13px;font-weight:700;flex:1}
+.card-sub{font-size:12px;color:var(--text2);line-height:1.55}
+
+/* ── PROGRESS BARS ── */
+.cbar-wrap{margin-bottom:9px}
+.cbar-wrap:last-child{margin-bottom:0}
+.cbar-label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px}
+.cbar{height:12px;background:var(--bg2);border-radius:3px;overflow:hidden}
+.cbar-fill{height:100%;border-radius:3px}
+
+/* ── STAT ROWS ── */
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:.5px solid var(--border);font-size:12px}
+.stat-row:last-child{border-bottom:none}
+.stat-label{color:var(--text2);flex:1;padding-right:8px}
+.stat-val{font-weight:700;text-align:right;flex-shrink:0}
+
+/* ── NOTICES ── */
+.notice{border:.5px solid;border-radius:6px;padding:11px 13px;margin-bottom:10px;font-size:12px;line-height:1.6}
+.notice:last-child{margin-bottom:0}
+.notice-r{background:var(--rf);border-color:#E24B4A;color:var(--rt)}
+.notice-a{background:var(--of);border-color:#EF9F27;color:var(--ot)}
+.notice-g{background:var(--gf);border-color:#4CAF50;color:var(--gt)}
+.notice-b{background:var(--bf);border-color:var(--blue);color:var(--bt)}
+.notice-p{background:var(--pf);border-color:var(--purple);color:var(--pt)}
+
+/* ── RAG DOTS ── */
+.rag{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle;flex-shrink:0}
+.rag-r{background:#E24B4A}
+.rag-a{background:#EF9F27}
+.rag-g{background:#4CAF50}
+.rag-b{background:#2E75B6}
+.rag-p{background:#5C3A7A}
+
+/* ── VALUE COLOURS ── */
+.v-g{color:var(--gt);font-weight:700}
+.v-a{color:var(--at);font-weight:700}
+.v-r{color:var(--rt);font-weight:700}
+.v-b{color:var(--bt);font-weight:700}
+
+/* ── ESCALATION FUNNEL ── */
+.funnel{display:flex;flex-direction:column;gap:6px}
+.funnel-tier{border-radius:4px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between}
+.funnel-label{font-size:12px;font-weight:700}
+.funnel-count{font-size:20px;font-weight:700}
+.funnel-sub{font-size:11px;opacity:.8}
+.ft-1{background:var(--rf);color:var(--rt)}
+.ft-2{background:var(--of);color:var(--ot)}
+.ft-3{background:var(--af);color:var(--at)}
+.ft-4{background:var(--gf);color:var(--gt)}
+.ft-5{background:var(--bf);color:var(--bt)}
+
+/* ── OWNER BLOCK ── */
+.owner-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.owner-card{background:#fff;border:.5px solid var(--border);border-radius:6px;border-top:3px solid;padding:11px 13px}
+.owner-tier{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text2);margin-bottom:4px}
+.owner-name{font-size:13px;font-weight:700;margin-bottom:2px}
+.owner-role{font-size:11px;color:var(--text2);margin-bottom:6px}
+
+/* ── TIMELINE ── */
+.tl{position:relative;padding-left:22px}
+.tl::before{content:'';position:absolute;left:4px;top:6px;bottom:6px;width:2px;background:var(--border)}
+.tl-item{position:relative;margin-bottom:14px;padding-bottom:14px;border-bottom:.5px solid var(--border)}
+.tl-item:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.tl-dot{position:absolute;left:-18px;top:3px;width:12px;height:12px;border-radius:50%;border:2px solid #fff}
+.tl-time{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+.tl-actor{font-size:11px;color:var(--blue);font-weight:700;margin-bottom:2px}
+.tl-title{font-size:12px;font-weight:700;margin-bottom:2px}
+.tl-desc{font-size:12px;color:var(--text2);line-height:1.5}
+
+/* ── ESCALATION STATUS STRIP ── */
+.esc-strip{background:#fff;border:.5px solid var(--border);border-radius:6px;overflow:hidden}
+.esc-hdr{display:grid;grid-template-columns:90px 100px 1fr 110px 90px 90px 90px;background:var(--navy);padding:8px 10px;gap:0}
+.esc-hdr span{font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.05em}
+.esc-row{display:grid;grid-template-columns:90px 100px 1fr 110px 90px 90px 90px;padding:8px 10px;border-bottom:.5px solid var(--border);font-size:12px;align-items:start;gap:0}
+.esc-row:last-child{border-bottom:none}
+.esc-row:hover{background:var(--bg2)}
+.esc-ref{font-weight:700}
+.esc-age{color:var(--text2);font-size:11px}
+.esc-desc{line-height:1.5;padding:0 8px}
+.esc-owner{font-weight:700;font-size:11px;padding-right:6px}
+.esc-stat{text-align:center}
+.esc-due{text-align:right;font-size:11px;color:var(--text2);padding-right:6px}
+.esc-pri{text-align:right}
+
+/* ── BREACH INDICATOR ── */
+.breach-pill{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;white-space:nowrap}
+.breach-r{background:var(--rt);color:#fff}
+.breach-a{background:var(--ot);color:#fff}
+.breach-g{background:var(--gt);color:#fff}
+
+/* ── ACTION ROW ── */
+.act-row{display:flex;gap:10px;padding:9px 0;border-bottom:.5px solid var(--border);font-size:12px;align-items:flex-start}
+.act-row:last-child{border-bottom:none}
+.act-ref{min-width:72px;font-weight:700;flex-shrink:0;color:var(--navy)}
+.act-body{flex:1}
+.act-title{font-weight:700;margin-bottom:2px}
+.act-desc{color:var(--text2);line-height:1.5}
+.act-meta{display:flex;gap:8px;margin-top:4px;flex-wrap:wrap}
+
+/* ── RACI TABLE ── */
+.raci-g{background:var(--gf);color:var(--gt);font-weight:700;text-align:center;padding:6px;border:.5px solid var(--border);font-size:11px}
+.raci-b{background:var(--bf);color:var(--bt);font-weight:700;text-align:center;padding:6px;border:.5px solid var(--border);font-size:11px}
+.raci-a{background:var(--af);color:var(--at);font-weight:700;text-align:center;padding:6px;border:.5px solid var(--border);font-size:11px}
+.raci-n{background:var(--bg2);color:var(--text2);text-align:center;padding:6px;border:.5px solid var(--border);font-size:11px}
+.raci-hdr{background:var(--navy);color:#fff;font-size:11px;font-weight:700;text-align:center;padding:8px 6px;border:.5px solid var(--border);letter-spacing:.04em;white-space:nowrap}
+.raci-lbl{background:var(--bg);font-size:12px;font-weight:700;padding:8px 10px;border:.5px solid var(--border);vertical-align:middle}
+.raci-table{width:100%;border-collapse:collapse}
+
+p.intro{font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6}
+
+/* ── APPLICATION PORTFOLIO STRIP (8-col) ── */
+.app-strip{background:#fff;border:.5px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:16px}
+.app-hdr{display:grid;grid-template-columns:80px 160px 1fr 90px 90px 80px 90px 90px;background:var(--navy);padding:8px 10px;gap:0}
+.app-hdr span{font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.05em}
+.app-row{display:grid;grid-template-columns:80px 160px 1fr 90px 90px 80px 90px 90px;padding:8px 10px;border-bottom:.5px solid var(--border);font-size:12px;align-items:center;gap:0}
+.app-row:last-child{border-bottom:none}
+.app-row:hover{background:var(--bg2)}
+.app-id{font-weight:700;color:var(--navy)}
+.app-cat{font-size:11px;color:var(--text2)}
+.app-name{line-height:1.5;padding:0 8px;font-weight:700}
+.app-num{text-align:right;font-variant-numeric:tabular-nums;padding-right:6px}
+.app-ctr{text-align:center}
+
+/* ── LICENCE STRIP (7-col) ── */
+.lic-strip{background:#fff;border:.5px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:16px}
+.lic-hdr{display:grid;grid-template-columns:150px 1fr 80px 80px 80px 90px 90px;background:var(--navy);padding:8px 10px;gap:0}
+.lic-hdr span{font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.05em}
+.lic-row{display:grid;grid-template-columns:150px 1fr 80px 80px 80px 90px 90px;padding:8px 10px;border-bottom:.5px solid var(--border);font-size:12px;align-items:center;gap:0}
+.lic-row:last-child{border-bottom:none}
+.lic-row:hover{background:var(--bg2)}
+.lic-vendor{font-weight:700}
+.lic-svc{font-size:11px;color:var(--text2);padding:0 8px}
+.lic-num{text-align:right;font-variant-numeric:tabular-nums;padding-right:6px}
+.lic-ctr{text-align:center}
+
+/* ── CLOUD SPEND STRIP (6-col) ── */
+.cld-strip{background:#fff;border:.5px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:16px}
+.cld-hdr{display:grid;grid-template-columns:160px 1fr 100px 100px 80px 90px;background:var(--navy);padding:8px 10px;gap:0}
+.cld-hdr span{font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.05em}
+.cld-row{display:grid;grid-template-columns:160px 1fr 100px 100px 80px 90px;padding:8px 10px;border-bottom:.5px solid var(--border);font-size:12px;align-items:center;gap:0}
+.cld-row:last-child{border-bottom:none}
+.cld-row:hover{background:var(--bg2)}
+.cld-service{font-weight:700}
+.cld-desc{font-size:11px;color:var(--text2);padding:0 8px}
+.cld-num{text-align:right;font-variant-numeric:tabular-nums;padding-right:6px}
+.cld-ctr{text-align:center}
+
+/* ── SAVING OPPORTUNITY STRIP (6-col) ── */
+.sav-strip{background:#fff;border:.5px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:16px}
+.sav-hdr{display:grid;grid-template-columns:80px 120px 1fr 100px 100px 90px;background:var(--navy);padding:8px 10px;gap:0}
+.sav-hdr span{font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.05em}
+.sav-row{display:grid;grid-template-columns:80px 120px 1fr 100px 100px 90px;padding:8px 10px;border-bottom:.5px solid var(--border);font-size:12px;align-items:start;gap:0}
+.sav-row:last-child{border-bottom:none}
+.sav-row:hover{background:var(--bg2)}
+.sav-id{font-weight:700;color:var(--navy)}
+.sav-cat{font-size:11px;color:var(--text2)}
+.sav-desc{line-height:1.5;padding:0 8px}
+.sav-num{text-align:right;font-variant-numeric:tabular-nums;padding-right:6px}
+.sav-ctr{text-align:center}
+
+/* ── PORTFOLIO DISCLAIMER ── */
+.portfolio-disclaimer{
+  position:sticky;top:0;z-index:9999;width:100%;
+  background:#7A1F1F;color:#ffffff;
+  font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.5;
+  padding:10px 16px;box-sizing:border-box;text-align:center;
+  border-bottom:3px solid #4a1212;
+}
+.portfolio-disclaimer strong{font-weight:700}
+.portfolio-disclaimer a{color:#ffffff;text-decoration:underline;font-weight:700}
+@media (max-width:640px){.portfolio-disclaimer{font-size:12px;padding:10px 12px}}
+.portfolio-about{max-width:1100px;margin:32px auto 40px;padding:20px 24px;border:1px solid var(--border);border-left:4px solid #7A1F1F;background:var(--bg);font-size:13px;line-height:1.6;color:var(--text2);scroll-margin-top:90px}
+.portfolio-about h2{font-size:15px;color:var(--navy);margin-bottom:8px}
+.portfolio-about p+p{margin-top:8px}
+.pd-short{display:none}
+.cg>*,.cg3>*,.mrow>*{min-width:0}
+
+/* ── RESPONSIVE ── */
+@media (max-width:900px){
+  .cg3{grid-template-columns:1fr 1fr}
+}
+@media (max-width:760px){
+  .pd-full{display:none}.pd-short{display:inline}
+  .cg,.cg3,.owner-grid{grid-template-columns:1fr}
+  .panel{padding:16px}
+  .hdr-top{flex-wrap:wrap;gap:4px;padding:12px 16px 0}
+  .hdr-main{padding:10px 16px 0}.hdr-title{font-size:21px}
+  .tab-bar{padding:0 8px}.tab{padding:12px 14px}
+  .cb0,.cb,.app-strip,.lic-strip,.cld-strip,.sav-strip,.esc-strip,.tw{overflow-x:auto}
+  .esc-hdr,.esc-row,.app-hdr,.app-row,.lic-hdr,.lic-row,.cld-hdr,.cld-row,.sav-hdr,.sav-row,.raci-table{min-width:760px}
+  .dt{min-width:440px}
+  .stat-row{gap:10px}.stat-val{text-align:right}
+  .cbar-label{gap:10px}
+  .act-row{flex-wrap:wrap}
+  .portfolio-about{margin:24px 16px 32px;padding:16px}
+}
+</style>
+</head>
+<body>
+
+<div class="portfolio-disclaimer">
+  &#9888; <strong>Fictional company &amp; data &mdash; independent portfolio exercise by Divan Gerber.</strong>
+  <span class="pd-short">Not a role held or real employer information. All figures simulated; real vendor names used illustratively.</span>
+  <span class="pd-full">All organizations, figures, and scenarios on this site are simulated for demonstration purposes.
+  Not a role held or real employer information. This page names several real companies and products (including Microsoft Azure, Power BI, Microsoft 365 and Defender, SAP, Salesforce, Databricks, Zoom, Mimecast, Informatica, Collibra, Kronos, CODA, Infor, MicroStrategy, IBM Cognos, Manhattan Associates, NCR, Zebra Technologies, Dimension Data and Basecamp) within an entirely fictional operational scenario. Every cost, licence count, saving, contract value, end-of-support finding and decommission status shown is invented for this exercise and does not describe any real contract, price, product defect or event involving those companies. The committees, decisions and roles shown are simulated scenario content, not decisions that happened. This is a static design prototype, not a live monitoring feed, and no real savings are claimed.</span>
+  <a href="#about-this-portfolio">Read more</a>
+</div>
+
+<input class="tab-radios" type="radio" name="tabs" id="t1" checked>
+<input class="tab-radios" type="radio" name="tabs" id="t2">
+<input class="tab-radios" type="radio" name="tabs" id="t3">
+<input class="tab-radios" type="radio" name="tabs" id="t4">
+<input class="tab-radios" type="radio" name="tabs" id="t5">
+<input class="tab-radios" type="radio" name="tabs" id="t6">
+<input class="tab-radios" type="radio" name="tabs" id="t7">
+
+<div class="pg-hdr">
+  <div class="hdr-top">
+    <div class="hdr-org">MedRetail Group South Africa (Fictional)</div>
+    <div class="hdr-ref">Independent Portfolio Exercise &nbsp;|&nbsp; Simulated period: June 2026</div>
+  </div>
+  <div class="hdr-main">
+    <div class="hdr-title">Application Cost Optimization Dashboard</div>
+    <div class="hdr-sub">R148M tech opex YTD &bull; R6.3M cloud overspend &bull; R11.4M identified savings (15 counted) &bull; 521 zombie licences &bull; 14 rationalisation candidates &bull; Simulated snapshot: 22 Jun 2026 (static data, not a live feed)</div>
+  </div>
+  <div class="tab-bar">
+    <label class="tab" for="t1">Cost Overview</label>
+    <label class="tab" for="t2">Application Portfolio</label>
+    <label class="tab" for="t3">Licence Optimisation</label>
+    <label class="tab" for="t4">Cloud Cost Management</label>
+    <label class="tab" for="t5">Savings Opportunities</label>
+    <label class="tab" for="t6">Rationalisation Pipeline</label>
+    <label class="tab" for="t7">Actions &amp; Governance</label>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PANEL 1 — COST OVERVIEW
+═════════════════════════════════════════ -->
+<div class="panel" id="p1">
+
+  <div class="notice notice-a">
+    <strong>Technology opex R12M over plan YTD &mdash; cost optimisation programme activated:</strong> Azure and Databricks cloud +R6.3M, contractor extensions +R1.2M, and unplanned emergency, vendor-support and licence true-up items +R2.0M are the itemised drivers (R9.5M of the R12M; a further R2.5M is spread across smaller variances). CFO and CIO joint cost review 5 Jul 2026. Target: reach an R11.4M annualised run-rate through licence rationalisation, cloud right-sizing, application consolidation and managed-service renegotiation (R7.6M cumulative by Dec 2026 on the forecast in the Savings tab).
+  </div>
+  <div class="notice notice-b" style="margin-top:10px">
+    <strong>R11.4M in annualised savings counted across 15 opportunities (R1.1M already realised) &mdash; remainder awaiting approvals.</strong> Application decommissioning (R5.66M), cloud right-sizing (R2.49M), managed service renegotiation (R2.00M) and zombie licence elimination (R1.28M); two further opportunities worth R7.1M gross are under review and are not counted. Full realisation requires CIO endorsement by 31 Jul and vendor negotiations completing by 30 Sep 2026.
+  </div>
+
+  <div class="mrow" style="margin-top:16px">
+    <div class="mc"><div class="ml">Total Tech Opex YTD</div><div class="mv v-a">R148M</div><div class="ms">vs R136M budget</div></div>
+    <div class="mc"><div class="ml">Opex Overspend YTD</div><div class="mv v-r">R12M</div><div class="ms">+8.8% over plan</div></div>
+    <div class="mc"><div class="ml">Cloud Overspend YTD</div><div class="mv v-r">R6.3M</div><div class="ms">Azure + Databricks</div></div>
+    <div class="mc"><div class="ml">Counted Savings (p.a.)</div><div class="mv v-g">R11.4M</div><div class="ms">15 opportunities</div></div>
+    <div class="mc"><div class="ml">Savings Realised YTD</div><div class="mv v-a">R1.1M</div><div class="ms">4 items completed</div></div>
+    <div class="mc"><div class="ml">Apps in Portfolio</div><div class="mv">84</div><div class="ms">Across all domains</div></div>
+    <div class="mc"><div class="ml">Retire / Decommission Apps</div><div class="mv v-r">14</div><div class="ms">Rationalisation candidates</div></div>
+    <div class="mc"><div class="ml">Unused Licences</div><div class="mv v-r">1 181</div><div class="ms">Across 9 products</div></div>
+  </div>
+
+  <div class="cg">
+    <div>
+      <div class="cb">
+        <div class="st">Cost overspend by category &mdash; YTD June 2026</div>
+        <div class="cbar-wrap">
+          <div class="cbar-label"><span>Azure analytics cloud (Synapse, ADF &amp; wider Azure estate)</span><span class="v-r">+R4.4M</span></div>
+          <div class="cbar"><div class="cbar-fill" style="width:100%;background:var(--rt)"></div></div>
+        </div>
+        <div class="cbar-wrap">
+          <div class="cbar-label"><span>Databricks DBU over-consumption</span><span class="v-r">+R1.9M</span></div>
+          <div class="cbar"><div class="cbar-fill" style="width:43%;background:var(--rt)"></div></div>
+        </div>
+        <div class="cbar-wrap">
+          <div class="cbar-label"><span>Contractor extensions (open FTEs)</span><span class="v-a">+R1.2M</span></div>
+          <div class="cbar"><div class="cbar-fill" style="width:27%;background:var(--ot)"></div></div>
+        </div>
+        <div class="cbar-wrap">
+          <div class="cbar-label"><span>Emergency change costs (unplanned)</span><span class="v-a">+R0.7M</span></div>
+          <div class="cbar"><div class="cbar-fill" style="width:16%;background:var(--at)"></div></div>
+        </div>
+        <div class="cbar-wrap">
+          <div class="cbar-label"><span>Clinical system emergency (Zebra fix)</span><span class="v-a">+R0.6M</span></div>
+          <div class="cbar"><div class="cbar-fill" style="width:14%;background:var(--at)"></div></div>
+        </div>
+        <div class="cbar-wrap">
+          <div class="cbar-label"><span>SAP licence true-up (annual)</span><span class="v-a">+R0.3M</span></div>
+          <div class="cbar"><div class="cbar-fill" style="width:7%;background:#888"></div></div>
+        </div>
+        <div class="cbar-wrap">
+          <div class="cbar-label"><span>Vendor callout &amp; support fees</span><span class="v-a">+R0.4M</span></div>
+          <div class="cbar"><div class="cbar-fill" style="width:9%;background:#888"></div></div>
+        </div>
+        <div class="cbar-wrap">
+          <div class="cbar-label"><span>Other smaller variances (not itemised)</span><span class="v-a">+R2.5M</span></div>
+          <div class="cbar"><div class="cbar-fill" style="width:57%;background:#888"></div></div>
+        </div>
+        <div class="stat-row" style="margin-top:6px"><span class="stat-label"><strong>Total opex overspend YTD</strong></span><span class="stat-val v-r">+R12.0M</span></div>
+      </div>
+
+      <div class="cb0">
+        <div class="st">Savings pipeline &mdash; status summary</div>
+        <div class="funnel">
+          <div class="funnel-tier ft-1">
+            <div><div class="funnel-label">Awaiting approval / not started</div><div class="funnel-sub">OPT-008, 009, 010, 013</div></div>
+            <div class="funnel-count" style="text-align:right"><div style="font-size:12px">R4.86M</div><div style="font-size:11px">4 items</div></div>
+          </div>
+          <div class="funnel-tier ft-2">
+            <div><div class="funnel-label">Vendor negotiation in progress</div><div class="funnel-sub">OPT-007 MicroStrategy</div></div>
+            <div class="funnel-count" style="text-align:right"><div style="font-size:12px">R0.90M</div><div style="font-size:11px">1 item</div></div>
+          </div>
+          <div class="funnel-tier ft-3">
+            <div><div class="funnel-label">Implementation in progress</div><div class="funnel-sub">Quick wins + active (OPT-001 to 006)</div></div>
+            <div class="funnel-count" style="text-align:right"><div style="font-size:12px">R4.57M</div><div style="font-size:11px">6 items</div></div>
+          </div>
+          <div class="funnel-tier ft-4">
+            <div><div class="funnel-label">Completed &mdash; saving confirmed</div><div class="funnel-sub">Finance-validated</div></div>
+            <div class="funnel-count" style="text-align:right"><div style="font-size:12px">R1.10M</div><div style="font-size:11px">4 items</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="cb">
+        <div class="st">Counted savings by category (p.a., open + realised)</div>
+        <div class="cbar-wrap">
+          <div class="cbar-label"><span>Application decommissioning (5 apps itemised)</span><span class="v-g">R5.66M counted</span></div>
+          <div class="cbar"><div class="cbar-fill" style="width:100%;background:var(--teal)"></div></div>
+        </div>
+        <div class="cbar-wrap">
+          <div class="cbar-label"><span>Cloud right-sizing (Azure + Databricks)</span><span class="v-g">R2.49M counted</span></div>
+          <div class="cbar"><div class="cbar-fill" style="width:44%;background:var(--blue)"></div></div>
+        </div>
+        <div class="cbar-wrap">
+          <div class="cbar-label"><span>Managed service renegotiation</span><span class="v-g">R2.00M counted</span></div>
+          <div class="cbar"><div class="cbar-fill" style="width:35%;background:var(--navy)"></div></div>
+        </div>
+        <div class="cbar-wrap">
+          <div class="cbar-label"><span>Zombie licence elimination</span><span class="v-g">R1.28M counted</span></div>
+          <div class="cbar"><div class="cbar-fill" style="width:23%;background:var(--purple)"></div></div>
+        </div>
+        <div class="cbar-wrap" style="border-top:.5px solid var(--border);padding-top:9px;margin-top:4px">
+          <div class="cbar-label"><span><strong>Of which realised YTD (total counted R11.43M)</strong></span><span class="v-g"><strong>R1.1M</strong></span></div>
+          <div class="cbar"><div class="cbar-fill" style="width:19%;background:var(--gt)"></div></div>
+        </div>
+      </div>
+
+      <div class="cb0">
+        <div class="st">Monthly tech opex trend &mdash; actual vs budget (R million; cloud column = analytics-platform lines)</div>
+        <div class="tw" style="margin-bottom:0">
+          <table class="dt">
+            <thead>
+              <tr>
+                <th>Month</th>
+                <th class="num">Budget</th>
+                <th class="num">Actual</th>
+                <th class="num">Variance</th>
+                <th class="ctr">Cloud Spend</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td class="mid">Jan 2026</td><td class="num">22M</td><td class="num v-g">20M</td><td class="num v-g">-2M</td><td class="ctr">R880k</td></tr>
+              <tr><td class="mid">Feb 2026</td><td class="num">22M</td><td class="num v-g">21M</td><td class="num v-g">-1M</td><td class="ctr">R950k</td></tr>
+              <tr><td class="mid">Mar 2026</td><td class="num">23M</td><td class="num v-a">26M</td><td class="num v-r">+3M</td><td class="ctr">R1.00M</td></tr>
+              <tr><td class="mid">Apr 2026</td><td class="num">23M</td><td class="num v-a">24M</td><td class="num v-r">+1M</td><td class="ctr">R1.07M</td></tr>
+              <tr><td class="mid">May 2026</td><td class="num">23M</td><td class="num v-r">29M</td><td class="num v-r">+6M</td><td class="ctr">R1.09M</td></tr>
+              <tr><td class="mid"><strong>Jun 2026</strong></td><td class="num"><strong>23M</strong></td><td class="num v-r"><strong>28M</strong></td><td class="num v-r"><strong>+5M</strong></td><td class="ctr v-a">R1.12M</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PANEL 2 — APPLICATION PORTFOLIO
+═════════════════════════════════════════ -->
+<div class="panel" id="p2">
+
+  <p class="intro">The MedRetail SA application portfolio comprises 84 production and near-production applications across retail, clinical, supply chain, finance, HR, and technology platforms. Applications are assessed annually against a value-cost matrix to identify rationalisation, consolidation, or migration candidates. Total cost of ownership (TCO) includes licence fees, hosting, support, integration maintenance, and allocated staff costs.</p>
+
+  <div class="mrow">
+    <div class="mc"><div class="ml">Total Applications</div><div class="mv">84</div><div class="ms">Production &amp; near-prod</div></div>
+    <div class="mc"><div class="ml">Total Portfolio TCO (p.a.)</div><div class="mv">R284M</div><div class="ms">All domains</div></div>
+    <div class="mc"><div class="ml">Business-Critical Apps</div><div class="mv v-g">28</div><div class="ms">High value, retain</div></div>
+    <div class="mc"><div class="ml">Strategic / Invest</div><div class="mv v-b">16</div><div class="ms">Growth roadmap</div></div>
+    <div class="mc"><div class="ml">Tolerate / Watch</div><div class="mv v-a">26</div><div class="ms">Review within 12 months</div></div>
+    <div class="mc"><div class="ml">Rationalise / Retire</div><div class="mv v-r">14</div><div class="ms">Decommission pipeline</div></div>
+    <div class="mc"><div class="ml">Portfolio TCO at Risk</div><div class="mv v-a">R18.4M</div><div class="ms">Low-value apps</div></div>
+    <div class="mc"><div class="ml">EoL / EoS Applications</div><div class="mv v-r">6</div><div class="ms">Ended or ending support</div></div>
+  </div>
+
+  <!-- Application portfolio strip -->
+  <div class="app-strip">
+    <div class="app-hdr">
+      <span>App ID</span>
+      <span>Domain</span>
+      <span>Application</span>
+      <span class="app-num">Annual TCO (R)</span>
+      <span class="app-ctr">Users</span>
+      <span class="app-ctr">EoL</span>
+      <span class="app-ctr">Value</span>
+      <span class="app-ctr">Action</span>
+    </div>
+    <!-- Business critical -->
+    <div class="app-row">
+      <div class="app-id">APP-001</div><div class="app-cat">Retail / POS</div>
+      <div class="app-name">NCR Counterpoint POS</div>
+      <div class="app-num">R48M</div><div class="app-ctr">312 stores</div><div class="app-ctr">2029</div>
+      <div class="app-ctr"><span class="badge bg">High</span></div><div class="app-ctr"><span class="badge bg">Retain</span></div>
+    </div>
+    <div class="app-row">
+      <div class="app-id">APP-002</div><div class="app-cat">ERP</div>
+      <div class="app-name">SAP ECC 6.0 (FI/CO/MM/SD)</div>
+      <div class="app-num">R42M</div><div class="app-ctr">1 284</div><div class="app-ctr"><span class="v-r">2027</span></div>
+      <div class="app-ctr"><span class="badge bg">High</span></div><div class="app-ctr"><span class="badge bm">Migrate</span></div>
+    </div>
+    <div class="app-row">
+      <div class="app-id">APP-003</div><div class="app-cat">Clinical</div>
+      <div class="app-name">RxElite Dispensing Platform</div>
+      <div class="app-num">R28M</div><div class="app-ctr">1 841</div><div class="app-ctr">2028</div>
+      <div class="app-ctr"><span class="badge bg">High</span></div><div class="app-ctr"><span class="badge bg">Retain</span></div>
+    </div>
+    <div class="app-row">
+      <div class="app-id">APP-004</div><div class="app-cat">Loyalty / CRM</div>
+      <div class="app-name">Salesforce CRM (Loyalty)</div>
+      <div class="app-num">R18M</div><div class="app-ctr">284</div><div class="app-ctr">SaaS</div>
+      <div class="app-ctr"><span class="badge bg">High</span></div><div class="app-ctr"><span class="badge bg">Retain</span></div>
+    </div>
+    <div class="app-row">
+      <div class="app-id">APP-005</div><div class="app-cat">Analytics</div>
+      <div class="app-name">Microsoft Power BI Premium (P2)</div>
+      <div class="app-num">R14M</div><div class="app-ctr">3 141</div><div class="app-ctr">SaaS</div>
+      <div class="app-ctr"><span class="badge bg">High</span></div><div class="app-ctr"><span class="badge bm">Upgrade</span></div>
+    </div>
+    <div class="app-row">
+      <div class="app-id">APP-006</div><div class="app-cat">Warehouse</div>
+      <div class="app-name">Manhattan WMS</div>
+      <div class="app-num">R12M</div><div class="app-ctr">412</div><div class="app-ctr">2028</div>
+      <div class="app-ctr"><span class="badge bg">High</span></div><div class="app-ctr"><span class="badge bg">Retain</span></div>
+    </div>
+    <div class="app-row">
+      <div class="app-id">APP-007</div><div class="app-cat">HR</div>
+      <div class="app-name">SAP HCM</div>
+      <div class="app-num">R8M</div><div class="app-ctr">8 412</div><div class="app-ctr">2027</div>
+      <div class="app-ctr"><span class="badge bg">High</span></div><div class="app-ctr"><span class="badge bm">Migrate</span></div>
+    </div>
+    <div class="app-row">
+      <div class="app-id">APP-008</div><div class="app-cat">Identity</div>
+      <div class="app-name">Microsoft Azure AD / Entra ID</div>
+      <div class="app-num">R6M</div><div class="app-ctr">9 800</div><div class="app-ctr">SaaS</div>
+      <div class="app-ctr"><span class="badge bg">High</span></div><div class="app-ctr"><span class="badge bg">Retain</span></div>
+    </div>
+    <!-- Tolerate / watch -->
+    <div class="app-row">
+      <div class="app-id">APP-021</div><div class="app-cat">Reporting</div>
+      <div class="app-name">Crystal Reports (Legacy BI)</div>
+      <div class="app-num">R2.8M</div><div class="app-ctr">148</div><div class="app-ctr"><span class="v-r">EoS</span></div>
+      <div class="app-ctr"><span class="badge bm">Medium</span></div><div class="app-ctr"><span class="badge bh">Watch</span></div>
+    </div>
+    <div class="app-row">
+      <div class="app-id">APP-022</div><div class="app-cat">Finance</div>
+      <div class="app-name">Cognos TM1 (Planning)</div>
+      <div class="app-num">R2.4M</div><div class="app-ctr">62</div><div class="app-ctr">2026</div>
+      <div class="app-ctr"><span class="badge bm">Medium</span></div><div class="app-ctr"><span class="badge bh">Migrate</span></div>
+    </div>
+    <div class="app-row">
+      <div class="app-id">APP-023</div><div class="app-cat">Supply Chain</div>
+      <div class="app-name">Infor M3 (Distribution legacy)</div>
+      <div class="app-num">R1.8M</div><div class="app-ctr">44</div><div class="app-ctr"><span class="v-r">EoS</span></div>
+      <div class="app-ctr"><span class="badge bm">Low</span></div><div class="app-ctr"><span class="badge bc">Retire</span></div>
+    </div>
+    <!-- Rationalise / retire -->
+    <div class="app-row">
+      <div class="app-id">APP-071</div><div class="app-cat">HR</div>
+      <div class="app-name">Kronos Workforce Legacy (timekeeping)</div>
+      <div class="app-num">R1.36M</div><div class="app-ctr">12</div><div class="app-ctr"><span class="v-r">EoS 2024</span></div>
+      <div class="app-ctr"><span class="badge bc">Zombie</span></div><div class="app-ctr"><span class="badge bc">Decommission</span></div>
+    </div>
+    <div class="app-row">
+      <div class="app-id">APP-072</div><div class="app-cat">Finance</div>
+      <div class="app-name">CODA Financials (legacy GL)</div>
+      <div class="app-num">R1.2M</div><div class="app-ctr">3</div><div class="app-ctr"><span class="v-r">EoS 2023</span></div>
+      <div class="app-ctr"><span class="badge bc">Zombie</span></div><div class="app-ctr"><span class="badge bc">Decommission</span></div>
+    </div>
+    <div class="app-row">
+      <div class="app-id">APP-073</div><div class="app-cat">Reporting</div>
+      <div class="app-name">MicroStrategy (duplicate analytics)</div>
+      <div class="app-num">R0.9M</div><div class="app-ctr">8</div><div class="app-ctr">2026</div>
+      <div class="app-ctr"><span class="badge bc">Low</span></div><div class="app-ctr"><span class="badge bc">Decommission</span></div>
+    </div>
+    <div class="app-row">
+      <div class="app-id">APP-074</div><div class="app-cat">Comms</div>
+      <div class="app-name">Zoom standalone (duplicate &mdash; M365)</div>
+      <div class="app-num">R0.6M</div><div class="app-ctr">0</div><div class="app-ctr">SaaS</div>
+      <div class="app-ctr"><span class="badge bc">Zombie</span></div><div class="app-ctr"><span class="badge bc">Terminate</span></div>
+    </div>
+    <div class="app-row">
+      <div class="app-id">APP-075</div><div class="app-cat">Project Mgmt</div>
+      <div class="app-name">Basecamp (shadow IT &mdash; no procurement)</div>
+      <div class="app-num">R0.4M</div><div class="app-ctr">0</div><div class="app-ctr">SaaS</div>
+      <div class="app-ctr"><span class="badge bc">Shadow</span></div><div class="app-ctr"><span class="badge bc">Terminate</span></div>
+    </div>
+  </div>
+
+  <div class="cg" style="margin-bottom:0">
+    <div class="cb0">
+      <div class="st">Portfolio by action category</div>
+      <div class="cbar-wrap">
+        <div class="cbar-label"><span>Retain &mdash; high value, core</span><span style="font-weight:700">28 apps (33%)</span></div>
+        <div class="cbar"><div class="cbar-fill" style="width:100%;background:var(--gt)"></div></div>
+      </div>
+      <div class="cbar-wrap">
+        <div class="cbar-label"><span>Strategic &mdash; invest and grow</span><span style="font-weight:700">16 apps (19%)</span></div>
+        <div class="cbar"><div class="cbar-fill" style="width:57%;background:var(--blue)"></div></div>
+      </div>
+      <div class="cbar-wrap">
+        <div class="cbar-label"><span>Migrate &mdash; upgrade or replatform</span><span style="font-weight:700">14 apps (17%)</span></div>
+        <div class="cbar"><div class="cbar-fill" style="width:50%;background:var(--navy)"></div></div>
+      </div>
+      <div class="cbar-wrap">
+        <div class="cbar-label"><span>Watch &mdash; tolerate, review 12 months</span><span style="font-weight:700">12 apps (14%)</span></div>
+        <div class="cbar"><div class="cbar-fill" style="width:43%;background:var(--at)"></div></div>
+      </div>
+      <div class="cbar-wrap">
+        <div class="cbar-label"><span>Decommission &mdash; retire pipeline</span><span style="font-weight:700">14 apps (17%)</span></div>
+        <div class="cbar"><div class="cbar-fill" style="width:50%;background:var(--rt)"></div></div>
+      </div>
+    </div>
+    <div class="cb0">
+      <div class="st">TCO by domain &mdash; annual (R million)</div>
+      <div class="cbar-wrap">
+        <div class="cbar-label"><span>Retail &amp; POS</span><span style="font-weight:700">R62M (21.8%)</span></div>
+        <div class="cbar"><div class="cbar-fill" style="width:100%;background:var(--navy)"></div></div>
+      </div>
+      <div class="cbar-wrap">
+        <div class="cbar-label"><span>ERP &amp; Finance</span><span style="font-weight:700">R58M (20.4%)</span></div>
+        <div class="cbar"><div class="cbar-fill" style="width:94%;background:var(--navy)"></div></div>
+      </div>
+      <div class="cbar-wrap">
+        <div class="cbar-label"><span>Clinical &amp; Pharmacy</span><span style="font-weight:700">R38M (13.4%)</span></div>
+        <div class="cbar"><div class="cbar-fill" style="width:61%;background:var(--teal)"></div></div>
+      </div>
+      <div class="cbar-wrap">
+        <div class="cbar-label"><span>Analytics &amp; Reporting</span><span style="font-weight:700">R28M (9.9%)</span></div>
+        <div class="cbar"><div class="cbar-fill" style="width:45%;background:var(--blue)"></div></div>
+      </div>
+      <div class="cbar-wrap">
+        <div class="cbar-label"><span>Loyalty &amp; CRM</span><span style="font-weight:700">R22M (7.7%)</span></div>
+        <div class="cbar"><div class="cbar-fill" style="width:35%;background:var(--purple)"></div></div>
+      </div>
+      <div class="cbar-wrap">
+        <div class="cbar-label"><span>Supply Chain &amp; Warehouse</span><span style="font-weight:700">R18M (6.3%)</span></div>
+        <div class="cbar"><div class="cbar-fill" style="width:29%;background:var(--teal)"></div></div>
+      </div>
+      <div class="cbar-wrap">
+        <div class="cbar-label"><span>HR &amp; Workforce</span><span style="font-weight:700">R14M (4.9%)</span></div>
+        <div class="cbar"><div class="cbar-fill" style="width:23%;background:#888"></div></div>
+      </div>
+      <div class="cbar-wrap">
+        <div class="cbar-label"><span>Infrastructure &amp; Identity</span><span style="font-weight:700">R44M (15.5%)</span></div>
+        <div class="cbar"><div class="cbar-fill" style="width:71%;background:var(--at)"></div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PANEL 3 — LICENCE OPTIMISATION
+═════════════════════════════════════════ -->
+<div class="panel" id="p3">
+
+  <p class="intro">Software licence optimisation identifies and eliminates waste in licence allocations across all SaaS, PaaS, and on-premise software products. Waste arises from over-provisioning (licences purchased exceeding active users), zombie licences (assigned to departed staff or inactive accounts), and duplicate capability (two products serving the same function). Licence audits are conducted semi-annually. Results are used to renegotiate renewals at right-sized volumes.</p>
+
+  <div class="mrow">
+    <div class="mc"><div class="ml">Total Licence Spend (p.a.)</div><div class="mv">R76M</div><div class="ms">All software products</div></div>
+    <div class="mc"><div class="ml">Zombie Licences Identified</div><div class="mv v-r">521</div><div class="ms">Inactive accounts (4 reclaim items)</div></div>
+    <div class="mc"><div class="ml">Over-Provisioned Products</div><div class="mv v-a">8</div><div class="ms">Purchased &gt; active</div></div>
+    <div class="mc"><div class="ml">Duplicate Capability</div><div class="mv v-a">4</div><div class="ms">Function overlap</div></div>
+    <div class="mc"><div class="ml">Reclaim Savings Identified</div><div class="mv v-g">R1.57M</div><div class="ms">4 zombie reclaim items, p.a.</div></div>
+    <div class="mc"><div class="ml">Savings Realised YTD</div><div class="mv v-g">R0.4M</div><div class="ms">2 products actioned</div></div>
+    <div class="mc"><div class="ml">Renewals Due (&lt;6 months)</div><div class="mv v-a">11</div><div class="ms">Optimise before renew</div></div>
+    <div class="mc"><div class="ml">Last Licence Audit</div><div class="mv">May 2026</div><div class="ms">Next: Nov 2026</div></div>
+  </div>
+
+  <!-- Licence inventory strip -->
+  <div class="lic-strip">
+    <div class="lic-hdr">
+      <span>Vendor</span>
+      <span>Product</span>
+      <span class="lic-num">Licences Owned</span>
+      <span class="lic-num">Active Users</span>
+      <span class="lic-num">Unused</span>
+      <span class="lic-ctr">Unit Cost (R)</span>
+      <span class="lic-ctr">Action</span>
+    </div>
+    <div class="lic-row">
+      <div class="lic-vendor">Microsoft</div>
+      <div class="lic-svc">M365 E3 (core productivity)</div>
+      <div class="lic-num">9 800</div><div class="lic-num">9 412</div>
+      <div class="lic-num v-a">388</div>
+      <div class="lic-ctr">R2 100</div><div class="lic-ctr"><span class="badge bm">Right-size at renewal</span></div>
+    </div>
+    <div class="lic-row">
+      <div class="lic-vendor">Microsoft</div>
+      <div class="lic-svc">Power BI Pro (non-PPU users)</div>
+      <div class="lic-num">480</div><div class="lic-num">284</div>
+      <div class="lic-num v-r">196</div>
+      <div class="lic-ctr">R1 400</div><div class="lic-ctr"><span class="badge bc">Reclaim now</span></div>
+    </div>
+    <div class="lic-row">
+      <div class="lic-vendor">Microsoft</div>
+      <div class="lic-svc">Teams Phone (legacy PSTN)</div>
+      <div class="lic-num">320</div><div class="lic-num">210</div>
+      <div class="lic-num v-a">110</div>
+      <div class="lic-ctr">R680</div><div class="lic-ctr"><span class="badge bm">Review scope</span></div>
+    </div>
+    <div class="lic-row">
+      <div class="lic-vendor">Salesforce</div>
+      <div class="lic-svc">Sales Cloud Enterprise</div>
+      <div class="lic-num">120</div><div class="lic-num">84</div>
+      <div class="lic-num v-r">36</div>
+      <div class="lic-ctr">R8 400</div><div class="lic-ctr"><span class="badge bc">Reclaim now</span></div>
+    </div>
+    <div class="lic-row">
+      <div class="lic-vendor">SAP</div>
+      <div class="lic-svc">SAP ECC Professional Users</div>
+      <div class="lic-num">1 400</div><div class="lic-num">1 284</div>
+      <div class="lic-num v-a">116</div>
+      <div class="lic-ctr">R12 800</div><div class="lic-ctr"><span class="badge bm">Right-size at renewal</span></div>
+    </div>
+    <div class="lic-row">
+      <div class="lic-vendor">Collibra</div>
+      <div class="lic-svc">Data Catalogue (steward licences)</div>
+      <div class="lic-num">80</div><div class="lic-num">62</div>
+      <div class="lic-num v-a">18</div>
+      <div class="lic-ctr">R18 200</div><div class="lic-ctr"><span class="badge bm">Right-size at renewal</span></div>
+    </div>
+    <div class="lic-row">
+      <div class="lic-vendor">Informatica</div>
+      <div class="lic-svc">MDM Professional (concurrent)</div>
+      <div class="lic-num">20</div><div class="lic-num">11</div>
+      <div class="lic-num v-r">9</div>
+      <div class="lic-ctr">R42 000</div><div class="lic-ctr"><span class="badge bc">Reclaim now</span></div>
+    </div>
+    <div class="lic-row">
+      <div class="lic-vendor">Zoom</div>
+      <div class="lic-svc">Business (duplicate &mdash; M365 Teams)</div>
+      <div class="lic-num">280</div><div class="lic-num">0</div>
+      <div class="lic-num v-r">280</div>
+      <div class="lic-ctr">R2 200</div><div class="lic-ctr"><span class="badge bc">Terminate contract</span></div>
+    </div>
+    <div class="lic-row">
+      <div class="lic-vendor">Mimecast</div>
+      <div class="lic-svc">Email Security (duplicate &mdash; Defender)</div>
+      <div class="lic-num">9 800</div><div class="lic-num">9 800</div>
+      <div class="lic-num">0</div>
+      <div class="lic-ctr">R480</div><div class="lic-ctr"><span class="badge bm">Consolidate review</span></div>
+    </div>
+    <div class="lic-row">
+      <div class="lic-vendor">Kronos</div>
+      <div class="lic-svc">Workforce (legacy &mdash; EoS 2024)</div>
+      <div class="lic-num">40</div><div class="lic-num">12</div>
+      <div class="lic-num v-r">28</div>
+      <div class="lic-ctr">R34 000</div><div class="lic-ctr"><span class="badge bc">Decommission</span></div>
+    </div>
+  </div>
+
+  <div class="cg" style="margin-bottom:0">
+    <div class="cb0">
+      <div class="st">Zombie licence detail &mdash; immediate reclaim opportunities</div>
+      <div class="card" style="border-left-color:var(--rt)">
+        <div class="card-hdr"><span class="card-title">Power BI Pro &mdash; 196 unused licences</span><span class="badge bc">R274k saving</span></div>
+        <div class="card-sub">196 Power BI Pro licences assigned to inactive accounts or users who have been migrated to PPU. Reclaim immediately: no active sessions in 90 days. Saving: 196 &times; R1 400 = R274k p.a. Action: IT Admin to remove assignments by 30 Jun, adjust renewal in Aug.</div>
+      </div>
+      <div class="card" style="border-left-color:var(--rt)">
+        <div class="card-hdr"><span class="card-title">Salesforce Sales Cloud &mdash; 36 unused licences</span><span class="badge bc">R302k saving</span></div>
+        <div class="card-sub">36 Salesforce Enterprise licences assigned to users with zero logins in 6+ months. CMO to review and confirm inactive status. Reclaim and reduce at next renewal (Sep 2026). Saving: 36 &times; R8 400 = R302k p.a.</div>
+      </div>
+      <div class="card" style="border-left-color:var(--rt)">
+        <div class="card-hdr"><span class="card-title">Zoom &mdash; 280 licences, zero users</span><span class="badge bc">R616k saving</span></div>
+        <div class="card-sub">Zoom contract persisted after migration to Microsoft Teams (M365 E3). Zero active users in 6 months. Contract to be terminated at next renewal (Aug 2026). Saving: 280 &times; R2 200 = R616k p.a. Legal to provide 60-day notice by 30 Jun.</div>
+      </div>
+      <div class="card" style="border-left-color:var(--ot)">
+        <div class="card-hdr"><span class="card-title">Informatica MDM &mdash; 9 concurrent licences unused</span><span class="badge bh">R378k saving</span></div>
+        <div class="card-sub">20 concurrent licences purchased, only 11 in active use. 9 concurrent slots unused. CDO to confirm reduced requirement at next renewal (Jan 2027). Saving: 9 &times; R42 000 = R378k p.a. Negotiate down before Jan.</div>
+      </div>
+    </div>
+    <div class="cb0">
+      <div class="st">Duplicate capability assessment</div>
+      <div class="stat-row"><span class="stat-label">Email security: Mimecast + M365 Defender</span><span class="stat-val v-a">R4.7M Mimecast licence cost (gross)</span></div>
+      <div class="stat-row"><span class="stat-label">Video conferencing: Zoom + Teams</span><span class="stat-val v-r">R0.6M waste</span></div>
+      <div class="stat-row"><span class="stat-label">Reporting: Crystal Reports + Power BI</span><span class="stat-val v-a">R3.2M combined</span></div>
+      <div class="stat-row"><span class="stat-label">Planning: Cognos TM1 + Excel/Power BI</span><span class="stat-val v-a">R2.4M cost</span></div>
+      <div style="height:12px"></div>
+      <div class="st">Recommended consolidation actions</div>
+      <div class="act-row">
+        <div class="act-ref">LIC-C01</div>
+        <div class="act-body">
+          <div class="act-title">Terminate Zoom &mdash; consolidate to M365 Teams</div>
+          <div class="act-desc">Zero active Zoom users since M365 Teams rollout. 60-day notice to terminate Aug contract. R616k saving.</div>
+          <div class="act-meta"><span class="badge bc">Quick Win</span><span class="badge bm">Due: 30 Jun</span></div>
+        </div>
+      </div>
+      <div class="act-row">
+        <div class="act-ref">LIC-C02</div>
+        <div class="act-body">
+          <div class="act-title">Mimecast vs Defender consolidation review</div>
+          <div class="act-desc">Security team to assess whether M365 Defender P2 provides equivalent protection. If yes, Mimecast to be terminated at renewal (Mar 2027). Potential saving: R4.7M.</div>
+          <div class="act-meta"><span class="badge bh">High</span><span class="badge bm">Review: 31 Jul</span></div>
+        </div>
+      </div>
+      <div class="act-row">
+        <div class="act-ref">LIC-C03</div>
+        <div class="act-body">
+          <div class="act-title">Cognos TM1 migration to Power BI / Excel</div>
+          <div class="act-desc">Finance team to assess whether planning requirements can be met by Power BI Dataflows + Excel. If viable, Cognos TM1 not to be renewed (Dec 2026). Saving: R2.4M p.a.</div>
+          <div class="act-meta"><span class="badge bh">High</span><span class="badge bm">Assessment: 31 Aug</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PANEL 4 — CLOUD COST MANAGEMENT
+═════════════════════════════════════════ -->
+<div class="panel" id="p4">
+
+  <p class="intro">Cloud cost management (FinOps) tracks Azure and Databricks consumption against budget, identifies waste from idle resources, and implements right-sizing and reservation strategies to reduce unit costs. MedRetail SA runs its analytics, data engineering, and AI workloads primarily on Microsoft Azure (Synapse Analytics, Data Factory, Data Lake) with Databricks for ML and advanced analytics. The June 2026 cloud spend of R1.12M/month is 14% above the budget of R980k/month.</p>
+  <div class="notice notice-b" style="margin-bottom:12px">Scope note: this tab tracks the analytics-platform budget lines (R5.88M budget YTD). The R6.3M Azure and Databricks overspend on the Cost Overview is an estate-wide figure that also includes consumption outside these lines; the two views are not reconciled line by line in this simulated dataset.</div>
+
+  <div class="mrow">
+    <div class="mc"><div class="ml">Cloud Spend (Jun MTD)</div><div class="mv v-a">R1.12M</div><div class="ms">vs R980k budget</div></div>
+    <div class="mc"><div class="ml">Cloud Spend YTD</div><div class="mv v-r">R6.11M</div><div class="ms">R5.88M budget (midyr)</div></div>
+    <div class="mc"><div class="ml">Tracked-Lines Overspend YTD</div><div class="mv v-r">R0.23M</div><div class="ms">+3.9% over plan (analytics lines)</div></div>
+    <div class="mc"><div class="ml">Cloud Savings Counted</div><div class="mv v-g">R2.49M</div><div class="ms">Open R2.18M + R0.31M realised</div></div>
+    <div class="mc"><div class="ml">Idle Resources Detected</div><div class="mv v-a">14</div><div class="ms">Clusters + pools</div></div>
+    <div class="mc"><div class="ml">Reserved Instances</div><div class="mv v-a">22%</div><div class="ms">78% pay-as-you-go</div></div>
+    <div class="mc"><div class="ml">RI Conversion Opportunity</div><div class="mv v-g">R840k</div><div class="ms">p.a. saving (1-yr RI)</div></div>
+    <div class="mc"><div class="ml">Next FinOps Review</div><div class="mv">15 Jul 2026</div><div class="ms">CDO / Platform Lead</div></div>
+  </div>
+
+  <!-- Cloud spend by service -->
+  <div class="cld-strip">
+    <div class="cld-hdr">
+      <span>Azure Service</span>
+      <span>Workload</span>
+      <span class="cld-num">Budget/Month (R)</span>
+      <span class="cld-num">Actual Jun (R)</span>
+      <span class="cld-ctr">Variance</span>
+      <span class="cld-ctr">Action</span>
+    </div>
+    <div class="cld-row">
+      <div class="cld-service">Azure Synapse SQL Pool</div>
+      <div class="cld-desc">Data warehouse &amp; reporting queries</div>
+      <div class="cld-num">R288k</div><div class="cld-num v-a">R341k</div>
+      <div class="cld-ctr"><span class="badge bc">+R53k</span></div>
+      <div class="cld-ctr"><span class="badge bm">Auto-pause</span></div>
+    </div>
+    <div class="cld-row">
+      <div class="cld-service">Databricks (DBU)</div>
+      <div class="cld-desc">ML training &amp; analytics jobs</div>
+      <div class="cld-num">R194k</div><div class="cld-num v-r">R248k</div>
+      <div class="cld-ctr"><span class="badge bc">+R54k</span></div>
+      <div class="cld-ctr"><span class="badge bc">Terminate idle</span></div>
+    </div>
+    <div class="cld-row">
+      <div class="cld-service">Azure Data Factory</div>
+      <div class="cld-desc">Pipeline orchestration &amp; ETL runs</div>
+      <div class="cld-num">R84k</div><div class="cld-num">R76k</div>
+      <div class="cld-ctr"><span class="badge bg">-R8k</span></div>
+      <div class="cld-ctr"><span class="badge bg">On Track</span></div>
+    </div>
+    <div class="cld-row">
+      <div class="cld-service">Azure Data Lake Gen2</div>
+      <div class="cld-desc">Raw &amp; curated data storage (18.4 TB)</div>
+      <div class="cld-num">R62k</div><div class="cld-num">R58k</div>
+      <div class="cld-ctr"><span class="badge bg">-R4k</span></div>
+      <div class="cld-ctr"><span class="badge bg">On Track</span></div>
+    </div>
+    <div class="cld-row">
+      <div class="cld-service">Azure Virtual Machines</div>
+      <div class="cld-desc">Dev, test, and integration servers</div>
+      <div class="cld-num">R148k</div><div class="cld-num v-a">R182k</div>
+      <div class="cld-ctr"><span class="badge bh">+R34k</span></div>
+      <div class="cld-ctr"><span class="badge bm">Right-size</span></div>
+    </div>
+    <div class="cld-row">
+      <div class="cld-service">Azure Networking / Egress</div>
+      <div class="cld-desc">ExpressRoute &amp; data transfer</div>
+      <div class="cld-num">R84k</div><div class="cld-num">R88k</div>
+      <div class="cld-ctr"><span class="badge bm">+R4k</span></div>
+      <div class="cld-ctr"><span class="badge bm">Monitor</span></div>
+    </div>
+    <div class="cld-row">
+      <div class="cld-service">Azure Backup &amp; Recovery</div>
+      <div class="cld-desc">VM snapshot &amp; long-term retention</div>
+      <div class="cld-num">R48k</div><div class="cld-num">R52k</div>
+      <div class="cld-ctr"><span class="badge bm">+R4k</span></div>
+      <div class="cld-ctr"><span class="badge bm">Review policy</span></div>
+    </div>
+    <div class="cld-row">
+      <div class="cld-service">Azure OpenAI / Cognitive Services</div>
+      <div class="cld-desc">AI API consumption (3 production models)</div>
+      <div class="cld-num">R72k</div><div class="cld-num">R75k</div>
+      <div class="cld-ctr"><span class="badge bm">+R3k</span></div>
+      <div class="cld-ctr"><span class="badge bm">Monitor</span></div>
+    </div>
+  </div>
+
+  <div class="cg">
+    <div class="cb0">
+      <div class="st">Cloud saving opportunities &mdash; detailed</div>
+      <div class="card" style="border-left-color:var(--rt)">
+        <div class="card-hdr"><span class="card-title">Databricks idle cluster termination</span><span class="badge bc">R640k p.a.</span></div>
+        <div class="card-sub">9 Databricks clusters not configured for auto-termination. Running overnight and weekends at full DBU rate with no active jobs. Azure Monitor shows 62% idle time, with 4 clusters running overnight. Fix: set auto-termination to 30 minutes on all clusters. Implementation: 2 hours. Owner: Data Engineering Lead. Target: 30 Jun 2026.</div>
+      </div>
+      <div class="card" style="border-left-color:var(--rt)">
+        <div class="card-hdr"><span class="card-title">Synapse DWU auto-pause configuration</span><span class="badge bc">R480k p.a.</span></div>
+        <div class="card-sub">Synapse SQL pool (DW2000c) running 24/7. Workload active 07:00&ndash;22:00 only. Auto-pause outside business hours could cut pool run-time by about 37%; the register counts only R480k p.a. (about 12% of the pool's cost) until the overnight ETL assessment is done. Implementation: Synapse schedule config. Risk: overnight ETL jobs must be assessed. Owner: Platform Lead. Target: 15 Jul 2026.</div>
+      </div>
+      <div class="card" style="border-left-color:var(--ot)">
+        <div class="card-hdr"><span class="card-title">Azure reserved instances conversion (1-year)</span><span class="badge bh">R840k p.a.</span></div>
+        <div class="card-sub">Currently 78% of Azure compute on pay-as-you-go. Converting predictable workloads (Synapse, VMs, Data Factory) to 1-year reserved instances provides ~37% discount. CFO and CIO to approve R1.2M upfront commitment by 31 Jul. The upfront payment is a prepayment that offsets pay-as-you-go charges; the month-4 break-even is a simulated assumption.</div>
+      </div>
+      <div class="card" style="border-left-color:var(--ot)">
+        <div class="card-hdr"><span class="card-title">ADF pipeline rationalisation</span><span class="badge bh">R220k p.a.</span></div>
+        <div class="card-sub">142 ADF pipelines in production. 38 are duplicates or running redundant at high frequency (hourly where daily suffices). Rationalise to 104 active pipelines and change 18 to daily cadence. Owner: Data Engineering Lead. Target: 31 Jul 2026.</div>
+      </div>
+    </div>
+    <div class="cb0">
+      <div class="st">Azure analytics-platform cost trend &mdash; actual vs budget monthly (R thousand; YTD R6.11M vs R5.88M)</div>
+      <div class="tw" style="margin-bottom:16px">
+        <table class="dt">
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th class="num">Budget (Rk)</th>
+              <th class="num">Actual (Rk)</th>
+              <th class="num">Variance (Rk)</th>
+              <th class="ctr">Top Driver</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="mid">Jan 2026</td><td class="num">R980k</td><td class="num v-g">R880k</td><td class="num v-g">-100k</td><td class="ctr">Synapse queries</td></tr>
+            <tr><td class="mid">Feb 2026</td><td class="num">R980k</td><td class="num v-g">R950k</td><td class="num v-g">-30k</td><td class="ctr">Databricks jobs</td></tr>
+            <tr><td class="mid">Mar 2026</td><td class="num">R980k</td><td class="num v-a">R1 000k</td><td class="num v-r">+20k</td><td class="ctr">Databricks + Synapse</td></tr>
+            <tr><td class="mid">Apr 2026</td><td class="num">R980k</td><td class="num v-a">R1 070k</td><td class="num v-r">+90k</td><td class="ctr">ML training runs</td></tr>
+            <tr><td class="mid">May 2026</td><td class="num">R980k</td><td class="num v-r">R1 090k</td><td class="num v-r">+110k</td><td class="ctr">Idle Databricks clusters</td></tr>
+            <tr><td class="mid"><strong>Jun 2026</strong></td><td class="num"><strong>R980k</strong></td><td class="num v-r"><strong>R1 120k</strong></td><td class="num v-r"><strong>+140k</strong></td><td class="ctr">Idle clusters + VMs</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="st">Reserved instance conversion plan</div>
+      <div class="stat-row"><span class="stat-label">Current RI coverage</span><span class="stat-val v-a">22% of compute</span></div>
+      <div class="stat-row"><span class="stat-label">Pay-as-you-go (PAYG) spend rate</span><span class="stat-val v-a">R720k / month</span></div>
+      <div class="stat-row"><span class="stat-label">Target RI coverage (after conversion)</span><span class="stat-val v-g">65% of compute</span></div>
+      <div class="stat-row"><span class="stat-label">1-year RI upfront commitment required</span><span class="stat-val">R1.2M</span></div>
+      <div class="stat-row"><span class="stat-label">Monthly saving post-conversion</span><span class="stat-val v-g">R70k / month</span></div>
+      <div class="stat-row"><span class="stat-label">Break-even month</span><span class="stat-val">Month 4 (Nov 2026, assumed)</span></div>
+      <div class="stat-row"><span class="stat-label">Annual net saving</span><span class="stat-val v-g">R840k p.a. (R280k in 2026: Sep&ndash;Dec)</span></div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PANEL 5 — SAVINGS OPPORTUNITIES
+═════════════════════════════════════════ -->
+<div class="panel" id="p5">
+
+  <p class="intro">The savings opportunity register captures all identified cost reduction opportunities across licences, cloud, application decommissioning, and managed service renegotiation. Each opportunity is assessed for confidence (High / Medium), effort to implement (Low / Medium / High), and savings quantum. Opportunities are prioritised as Quick Wins (approved and executable within 30 days), Active (in progress), and Pipeline (planned for H2 2026).</p>
+
+  <div class="mrow">
+    <div class="mc"><div class="ml">Total Savings Counted</div><div class="mv v-g">R11.4M</div><div class="ms">Annualised p.a. (incl. realised)</div></div>
+    <div class="mc"><div class="ml">Quick Wins Available</div><div class="mv v-g">R1.5M</div><div class="ms">30-day implementable</div></div>
+    <div class="mc"><div class="ml">Active (In Progress)</div><div class="mv v-a">R3.0M</div><div class="ms">Implementation underway</div></div>
+    <div class="mc"><div class="ml">Pipeline (H2 2026)</div><div class="mv">R5.8M</div><div class="ms">Approval or vendor dep.</div></div>
+    <div class="mc"><div class="ml">Savings Realised YTD</div><div class="mv v-g">R1.1M</div><div class="ms">Simulated, finance validated</div></div>
+    <div class="mc"><div class="ml">Forecast by Dec 2026</div><div class="mv v-a">R7.6M</div><div class="ms">Cumulative run-rate</div></div>
+  </div>
+
+  <!-- Savings opportunity strip -->
+  <div class="sav-strip">
+    <div class="sav-hdr">
+      <span>Opp #</span>
+      <span>Category</span>
+      <span>Opportunity Description</span>
+      <span class="sav-num">Annual Saving (R, gross)</span>
+      <span class="sav-ctr">Confidence</span>
+      <span class="sav-ctr">Status</span>
+    </div>
+    <!-- Quick wins -->
+    <div class="sav-row">
+      <div class="sav-id">OPT-001</div><div class="sav-cat">Cloud</div>
+      <div class="sav-desc">Databricks idle cluster auto-termination (30-min timeout on all 9 clusters)</div>
+      <div class="sav-num v-g">R640k</div>
+      <div class="sav-ctr"><span class="breach-pill breach-g">High</span></div>
+      <div class="sav-ctr"><span class="badge bc">Quick Win</span></div>
+    </div>
+    <div class="sav-row">
+      <div class="sav-id">OPT-002</div><div class="sav-cat">Licence</div>
+      <div class="sav-desc">Zoom contract termination (280 zero-use licences &mdash; 60-day notice)</div>
+      <div class="sav-num v-g">R616k</div>
+      <div class="sav-ctr"><span class="breach-pill breach-g">High</span></div>
+      <div class="sav-ctr"><span class="badge bc">Quick Win</span></div>
+    </div>
+    <div class="sav-row">
+      <div class="sav-id">OPT-003</div><div class="sav-cat">Licence</div>
+      <div class="sav-desc">Power BI Pro reclaim (196 unused licences &mdash; inactive accounts)</div>
+      <div class="sav-num v-g">R274k</div>
+      <div class="sav-ctr"><span class="breach-pill breach-g">High</span></div>
+      <div class="sav-ctr"><span class="badge bc">Quick Win</span></div>
+    </div>
+    <!-- Active -->
+    <div class="sav-row">
+      <div class="sav-id">OPT-004</div><div class="sav-cat">Cloud</div>
+      <div class="sav-desc">Synapse SQL pool auto-pause outside business hours (07:00&ndash;22:00)</div>
+      <div class="sav-num v-g">R480k</div>
+      <div class="sav-ctr"><span class="breach-pill breach-g">High</span></div>
+      <div class="sav-ctr"><span class="badge bg">Active</span></div>
+    </div>
+    <div class="sav-row">
+      <div class="sav-id">OPT-005</div><div class="sav-cat">App</div>
+      <div class="sav-desc">Kronos Workforce decommission (EoS 2024 &mdash; 12 active users, migrate to SAP HCM)</div>
+      <div class="sav-num v-g">R1.36M</div>
+      <div class="sav-ctr"><span class="breach-pill breach-g">High</span></div>
+      <div class="sav-ctr"><span class="badge bg">Active</span></div>
+    </div>
+    <div class="sav-row">
+      <div class="sav-id">OPT-006</div><div class="sav-cat">App</div>
+      <div class="sav-desc">CODA Financials decommission (3 users &mdash; reports migrated to Power BI)</div>
+      <div class="sav-num v-g">R1.2M</div>
+      <div class="sav-ctr"><span class="breach-pill breach-g">High</span></div>
+      <div class="sav-ctr"><span class="badge bg">Active</span></div>
+    </div>
+    <div class="sav-row">
+      <div class="sav-id">OPT-007</div><div class="sav-cat">App</div>
+      <div class="sav-desc">MicroStrategy decommission (8 users &mdash; duplicate of Power BI)</div>
+      <div class="sav-num v-g">R900k</div>
+      <div class="sav-ctr"><span class="breach-pill breach-g">High</span></div>
+      <div class="sav-ctr"><span class="badge bm">In Negotiation</span></div>
+    </div>
+    <!-- Pipeline -->
+    <div class="sav-row">
+      <div class="sav-id">OPT-008</div><div class="sav-cat">Cloud</div>
+      <div class="sav-desc">Azure reserved instance conversion (65% of compute on 1-year RI)</div>
+      <div class="sav-num v-g">R840k</div>
+      <div class="sav-ctr"><span class="breach-pill breach-g">High</span></div>
+      <div class="sav-ctr"><span class="badge bp">Pipeline</span></div>
+    </div>
+    <div class="sav-row">
+      <div class="sav-id">OPT-009</div><div class="sav-cat">Cloud</div>
+      <div class="sav-desc">ADF pipeline rationalisation (142 to 104 active; 18 frequency changes)</div>
+      <div class="sav-num v-g">R220k</div>
+      <div class="sav-ctr"><span class="breach-pill breach-a">Medium</span></div>
+      <div class="sav-ctr"><span class="badge bp">Pipeline</span></div>
+    </div>
+    <div class="sav-row">
+      <div class="sav-id">OPT-010</div><div class="sav-cat">Service</div>
+      <div class="sav-desc">Dimension Data managed services renegotiation (contract Dec 2026 &mdash; RFP)</div>
+      <div class="sav-num v-g">R2.0M</div>
+      <div class="sav-ctr"><span class="breach-pill breach-a">Medium</span></div>
+      <div class="sav-ctr"><span class="badge bp">Pipeline</span></div>
+    </div>
+    <div class="sav-row">
+      <div class="sav-id">OPT-011</div><div class="sav-cat">Licence</div>
+      <div class="sav-desc">Mimecast consolidation into M365 Defender P2 (if security review passes)</div>
+      <div class="sav-num">R4.7M</div>
+      <div class="sav-ctr"><span class="breach-pill breach-a">Medium</span></div>
+      <div class="sav-ctr"><span class="badge bm">Under Review</span></div>
+    </div>
+    <div class="sav-row">
+      <div class="sav-id">OPT-012</div><div class="sav-cat">Licence</div>
+      <div class="sav-desc">Cognos TM1 non-renewal (migrate to Power BI Dataflows + Excel planning)</div>
+      <div class="sav-num">R2.4M</div>
+      <div class="sav-ctr"><span class="breach-pill breach-a">Medium</span></div>
+      <div class="sav-ctr"><span class="badge bm">Under Review</span></div>
+    </div>
+    <div class="sav-row">
+      <div class="sav-id">OPT-013</div><div class="sav-cat">App</div>
+      <div class="sav-desc">Infor M3 decommission (44 users &mdash; consolidate distribution into SAP MM)</div>
+      <div class="sav-num">R1.8M</div>
+      <div class="sav-ctr"><span class="breach-pill breach-a">Medium</span></div>
+      <div class="sav-ctr"><span class="badge bp">Pipeline</span></div>
+    </div>
+  </div>
+
+  <div class="notice notice-b" style="margin-bottom:16px">Register values are gross annual contract or TCO values before replacement and migration costs. OPT-011 and OPT-012 (R7.1M gross) are under review and are <strong>not</strong> counted in the R11.4M headline. Counted open items: R10.33M (quick wins R1.53M, active R3.04M, pipeline and negotiation R5.76M) plus R1.10M realised = R11.43M.</div>
+
+  <div class="cg" style="margin-bottom:0">
+    <div class="cb0">
+      <div class="st">Savings realised YTD &mdash; completed items</div>
+      <div class="act-row">
+        <div class="act-ref">OPT-R01</div>
+        <div class="act-body">
+          <div class="act-title">Salesforce inactive licence reclaim &mdash; 28 licences returned</div>
+          <div class="act-desc">Completed May 2026. 28 inactive Salesforce Service Cloud licences reclaimed after 90-day inactive audit. Finance validated saving R235k p.a. from Jun renewal.</div>
+          <div class="act-meta"><span class="badge bg">Done</span><span class="v-g">R235k p.a. saved</span></div>
+        </div>
+      </div>
+      <div class="act-row">
+        <div class="act-ref">OPT-R02</div>
+        <div class="act-body">
+          <div class="act-title">Basecamp shadow-IT contract termination</div>
+          <div class="act-desc">Completed Apr 2026. Basecamp subscription identified in shadow-IT audit (no procurement approval). Contract terminated immediately. 0 active users. R400k p.a. recovered.</div>
+          <div class="act-meta"><span class="badge bg">Done</span><span class="v-g">R400k p.a. saved</span></div>
+        </div>
+      </div>
+      <div class="act-row">
+        <div class="act-ref">OPT-R03</div>
+        <div class="act-body">
+          <div class="act-title">Azure dev/test VMs right-sized (D-series downgrade)</div>
+          <div class="act-desc">Completed Jun 2026. 14 dev/test VMs downgraded from D8s to D4s during low-utilisation analysis. No performance impact observed. R310k p.a. saving confirmed by Azure Cost Management.</div>
+          <div class="act-meta"><span class="badge bg">Done</span><span class="v-g">R310k p.a. saved</span></div>
+        </div>
+      </div>
+      <div class="act-row">
+        <div class="act-ref">OPT-R04</div>
+        <div class="act-body">
+          <div class="act-title">M365 E1 to E3 consolidation (400 users migrated)</div>
+          <div class="act-desc">Completed Mar 2026. 400 users on E1+add-ons migrated to E3 bundle at lower combined cost. R155k p.a. saving from bundle pricing vs unbundled licences.</div>
+          <div class="act-meta"><span class="badge bg">Done</span><span class="v-g">R155k p.a. saved</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="cb0">
+      <div class="st">Savings forecast &mdash; realisation timeline (R million, cumulative)</div>
+      <div class="cbar-wrap">
+        <div class="cbar-label"><span>Realised YTD (Jun 2026)</span><span class="v-g">R1.1M</span></div>
+        <div class="cbar"><div class="cbar-fill" style="width:13%;background:var(--gt)"></div></div>
+      </div>
+      <div class="cbar-wrap">
+        <div class="cbar-label"><span>Forecast Q3 2026 (quick wins + active)</span><span class="v-g">R5.7M cumulative</span></div>
+        <div class="cbar"><div class="cbar-fill" style="width:50%;background:var(--blue)"></div></div>
+      </div>
+      <div class="cbar-wrap">
+        <div class="cbar-label"><span>Forecast Q4 2026 (MicroStrategy, reserved instances, ADF)</span><span class="v-g">R7.6M cumulative</span></div>
+        <div class="cbar"><div class="cbar-fill" style="width:67%;background:var(--teal)"></div></div>
+      </div>
+      <div class="cbar-wrap">
+        <div class="cbar-label"><span>Full run-rate (all 15 counted opportunities)</span><span class="v-g">R11.4M annualised</span></div>
+        <div class="cbar"><div class="cbar-fill" style="width:100%;background:var(--navy)"></div></div>
+      </div>
+      <div class="notice notice-g" style="margin-top:12px">If the Q3 quick wins and active items (OPT-001 to OPT-006) complete by 31 Aug, cumulative annualised savings of R5.7M would offset about 47% of the R12M YTD tech opex overspend on a run-rate basis (simulated forecast). This is the primary target for the joint CIO-CFO cost review (5 Jul).</div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PANEL 6 — RATIONALISATION PIPELINE
+═════════════════════════════════════════ -->
+<div class="panel" id="p6">
+
+  <p class="intro">Application rationalisation identifies applications that are redundant, past end-of-life, used by fewer than 10 users, or where the business function is adequately served by an existing platform. Rationalisation reduces licensing cost, integration complexity, security surface area, and operational support burden. Each decommission must follow the Application Retirement Policy (ARP-001): data archiving, user migration, integration cut-over, and sign-off by the business owner.</p>
+
+  <div class="mrow">
+    <div class="mc"><div class="ml">Apps in Decommission Pipeline</div><div class="mv">14</div><div class="ms">In retirement pipeline</div></div>
+    <div class="mc"><div class="ml">Total TCO Being Retired</div><div class="mv v-g">R12.6M</div><div class="ms">10 itemised (R11.9M) + 4 minor apps</div></div>
+    <div class="mc"><div class="ml">In Active Decommission</div><div class="mv v-a">4</div><div class="ms">Work in progress</div></div>
+    <div class="mc"><div class="ml">Decommission Blocked</div><div class="mv v-r">2</div><div class="ms">Data migration issues</div></div>
+    <div class="mc"><div class="ml">Completed YTD</div><div class="mv v-g">3</div><div class="ms">R0.8M p.a. TCO removed</div></div>
+    <div class="mc"><div class="ml">EoS Apps Still Running</div><div class="mv v-r">6</div><div class="ms">Security &amp; support risk</div></div>
+  </div>
+
+  <!-- Rationalisation pipeline table -->
+  <div class="tw sh">
+    <table class="dt">
+      <thead>
+        <tr>
+          <th>App ID</th>
+          <th>Application</th>
+          <th>Domain</th>
+          <th>Reason</th>
+          <th class="num">Annual TCO (R)</th>
+          <th class="ctr">EoL / EoS</th>
+          <th class="ctr">Replacement</th>
+          <th class="ctr">Target Date</th>
+          <th class="ctr">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mid">APP-071</td><td class="mid"><strong>Kronos Workforce</strong></td>
+          <td class="mid">HR</td><td class="mid">EoS 2024, 12 users</td>
+          <td class="num">R1.36M</td><td class="ctr v-r">EoS</td>
+          <td class="ctr">SAP HCM SuccessFactors</td>
+          <td class="ctr">Sep 2026</td>
+          <td class="ctr"><span class="badge bh">In Progress</span></td>
+        </tr>
+        <tr>
+          <td class="mid">APP-072</td><td class="mid"><strong>CODA Financials</strong></td>
+          <td class="mid">Finance</td><td class="mid">EoS 2023, 3 users</td>
+          <td class="num">R1.2M</td><td class="ctr v-r">EoS</td>
+          <td class="ctr">SAP FI / Power BI</td>
+          <td class="ctr">Aug 2026</td>
+          <td class="ctr"><span class="badge bh">In Progress</span></td>
+        </tr>
+        <tr>
+          <td class="mid">APP-073</td><td class="mid"><strong>MicroStrategy</strong></td>
+          <td class="mid">Analytics</td><td class="mid">Duplicate of Power BI</td>
+          <td class="num">R900k</td><td class="ctr">2026</td>
+          <td class="ctr">Power BI</td>
+          <td class="ctr">Sep 2026</td>
+          <td class="ctr"><span class="badge bm">Negotiating</span></td>
+        </tr>
+        <tr>
+          <td class="mid">APP-074</td><td class="mid"><strong>Zoom standalone</strong></td>
+          <td class="mid">Comms</td><td class="mid">Duplicate of Teams</td>
+          <td class="num">R616k</td><td class="ctr">SaaS</td>
+          <td class="ctr">Microsoft Teams (M365)</td>
+          <td class="ctr">Aug 2026</td>
+          <td class="ctr"><span class="badge bc">Quick Win</span></td>
+        </tr>
+        <tr>
+          <td class="mid">APP-075</td><td class="mid"><strong>Basecamp</strong></td>
+          <td class="mid">Project Mgmt</td><td class="mid">Shadow IT, no users</td>
+          <td class="num">R400k</td><td class="ctr">SaaS</td>
+          <td class="ctr">Microsoft Planner (M365)</td>
+          <td class="ctr">Done</td>
+          <td class="ctr"><span class="badge bg">Terminated</span></td>
+        </tr>
+        <tr>
+          <td class="mid">APP-023</td><td class="mid"><strong>Infor M3</strong></td>
+          <td class="mid">Distribution</td><td class="mid">EoS, 44 users</td>
+          <td class="num">R1.8M</td><td class="ctr v-r">EoS</td>
+          <td class="ctr">SAP MM / EWM</td>
+          <td class="ctr">Dec 2026</td>
+          <td class="ctr"><span class="badge bp">Planned</span></td>
+        </tr>
+        <tr>
+          <td class="mid">APP-021</td><td class="mid"><strong>Crystal Reports (Legacy)</strong></td>
+          <td class="mid">Reporting</td><td class="mid">EoS, 148 users migrating</td>
+          <td class="num">R2.8M</td><td class="ctr v-r">EoS</td>
+          <td class="ctr">Power BI</td>
+          <td class="ctr">Mar 2027</td>
+          <td class="ctr"><span class="badge bp">Planned</span></td>
+        </tr>
+        <tr>
+          <td class="mid">APP-022</td><td class="mid"><strong>Cognos TM1</strong></td>
+          <td class="mid">Finance Planning</td><td class="mid">2026 EoL, 62 users</td>
+          <td class="num">R2.4M</td><td class="ctr">2026</td>
+          <td class="ctr">Power BI Dataflows</td>
+          <td class="ctr">Feb 2027</td>
+          <td class="ctr"><span class="badge bm">Under Review</span></td>
+        </tr>
+        <tr>
+          <td class="mid">APP-081</td><td class="mid"><strong>Legacy POS Summary Tool</strong></td>
+          <td class="mid">Retail</td><td class="mid">Replaced by Power BI</td>
+          <td class="num">R180k</td><td class="ctr">N/A</td>
+          <td class="ctr">Power BI Sales BI</td>
+          <td class="ctr">Done</td>
+          <td class="ctr"><span class="badge bg">Decommissioned</span></td>
+        </tr>
+        <tr>
+          <td class="mid">APP-082</td><td class="mid"><strong>On-prem SFTP server</strong></td>
+          <td class="mid">Integration</td><td class="mid">Replaced by ADF/Azure</td>
+          <td class="num">R240k</td><td class="ctr">N/A</td>
+          <td class="ctr">Azure Data Factory</td>
+          <td class="ctr">Done</td>
+          <td class="ctr"><span class="badge bg">Decommissioned</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cg" style="margin-bottom:0">
+    <div class="cb0">
+      <div class="st">Blocked decommissions &mdash; intervention required</div>
+      <div class="card" style="border-left-color:var(--rt)">
+        <div class="card-hdr"><span class="card-title">Kronos Workforce &mdash; SAP HCM migration incomplete</span><span class="badge bc">Blocked</span></div>
+        <div class="card-sub">12 remaining Kronos users (night shift supervisors) cannot be migrated to SAP HCM SuccessFactors until the Time &amp; Attendance module is live. SAP HCM T&amp;A module go-live delayed to Aug 2026. Kronos decommission target slipped from Jul to Sep 2026. R1.36M p.a. cost continuing until resolved. HR and SAP Programme team to accelerate T&amp;A config.</div>
+      </div>
+      <div class="card" style="border-left-color:var(--rt)">
+        <div class="card-hdr"><span class="card-title">CODA Financials &mdash; historical data archive not complete</span><span class="badge bc">Blocked</span></div>
+        <div class="card-sub">3 active users need 7-year historical GL data archived to SharePoint before decommission. Archival process started Jun 2026 but SAP data validation errors are delaying sign-off. CFO sign-off on archive completeness required before decommission can proceed. Target: Aug 2026. R1.2M p.a. cost continuing.</div>
+      </div>
+    </div>
+    <div class="cb0">
+      <div class="st">EoS applications still in production &mdash; risk summary</div>
+      <div class="stat-row"><span class="stat-label">Kronos Workforce (EoS Oct 2024)</span><span class="stat-val"><span class="badge bc">High risk</span></span></div>
+      <div class="stat-row"><span class="stat-label">CODA Financials (EoS Jan 2023)</span><span class="stat-val"><span class="badge bc">High risk</span></span></div>
+      <div class="stat-row"><span class="stat-label">Infor M3 v13 (EoS Dec 2024)</span><span class="stat-val"><span class="badge bc">High risk</span></span></div>
+      <div class="stat-row"><span class="stat-label">Crystal Reports XI (extended support to Jul 2026)</span><span class="stat-val"><span class="badge bh">Medium risk</span></span></div>
+      <div class="stat-row"><span class="stat-label">SAP ECC 6.0 (mainstream EoS 2027)</span><span class="stat-val"><span class="badge bm">Watch</span></span></div>
+      <div class="stat-row"><span class="stat-label">Cognos TM1 v10 (EoL Dec 2026)</span><span class="stat-val"><span class="badge bm">Watch</span></span></div>
+      <div class="notice notice-a" style="margin-top:10px">3 applications (Kronos, CODA, Infor M3) are operating beyond vendor end-of-support in this scenario with no security patches available. This is an unmitigated security and compliance risk. CISO and CIO to be briefed at the 16 Jul TIC. Emergency decommission acceleration may be required.</div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PANEL 7 — ACTIONS & GOVERNANCE
+═════════════════════════════════════════ -->
+<div class="panel" id="p7">
+
+  <p class="intro">Application cost optimisation governance ensures that all identified savings are tracked to completion, that approvals are obtained in time to meet savings targets, and that decommission activities follow the Application Retirement Policy (ARP-001). The CIO and CFO jointly sponsor the cost optimisation programme (each workstream has one accountable owner in the RACI) and report monthly to the Technology Investment Committee (TIC). The target is an R11.4M annualised run-rate of counted savings (R7.6M cumulative by Dec 2026), against the YTD opex overspend of R12M.</p>
+
+  <div class="mrow">
+    <div class="mc"><div class="ml">Open Actions</div><div class="mv">28</div><div class="ms">All priorities</div></div>
+    <div class="mc"><div class="ml">Critical Actions</div><div class="mv v-r">5</div><div class="ms">CIO / CFO decision</div></div>
+    <div class="mc"><div class="ml">Overdue Actions</div><div class="mv v-r">4</div><div class="ms">Past agreed date</div></div>
+    <div class="mc"><div class="ml">Quick Wins Pending</div><div class="mv v-a">3</div><div class="ms">30-day implementable</div></div>
+    <div class="mc"><div class="ml">Next TIC Review</div><div class="mv">16 Jul 2026</div><div class="ms">Cost optimisation item</div></div>
+    <div class="mc"><div class="ml">CFO / CIO Cost Review</div><div class="mv v-a">5 Jul 2026</div><div class="ms">Joint session</div></div>
+  </div>
+
+  <!-- Governance RACI -->
+  <div class="cb">
+    <div class="st">Cost optimisation RACI &mdash; accountability by workstream</div>
+    <div class="tw" style="margin-bottom:0">
+      <table class="raci-table">
+        <thead>
+          <tr>
+            <td class="raci-hdr" style="text-align:left;width:200px">Workstream</td>
+            <td class="raci-hdr">CIO</td>
+            <td class="raci-hdr">CFO</td>
+            <td class="raci-hdr">CDO</td>
+            <td class="raci-hdr">CTO</td>
+            <td class="raci-hdr">Platform Lead</td>
+            <td class="raci-hdr">Finance</td>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="raci-lbl">Cloud right-sizing (FinOps)</td>
+            <td class="raci-b">C</td><td class="raci-b">C</td><td class="raci-g">A</td>
+            <td class="raci-b">C</td><td class="raci-g">R</td><td class="raci-b">C</td>
+          </tr>
+          <tr>
+            <td class="raci-lbl">Licence rationalisation</td>
+            <td class="raci-g">A</td><td class="raci-b">C</td><td class="raci-b">C</td>
+            <td class="raci-b">C</td><td class="raci-n">I</td><td class="raci-g">R</td>
+          </tr>
+          <tr>
+            <td class="raci-lbl">Application decommissioning</td>
+            <td class="raci-g">A</td><td class="raci-b">C</td><td class="raci-b">C</td>
+            <td class="raci-g">R</td><td class="raci-b">C</td><td class="raci-b">C</td>
+          </tr>
+          <tr>
+            <td class="raci-lbl">Managed service renegotiation</td>
+            <td class="raci-g">A</td><td class="raci-b">C</td><td class="raci-n">I</td>
+            <td class="raci-b">C</td><td class="raci-n">I</td><td class="raci-g">R</td>
+          </tr>
+          <tr>
+            <td class="raci-lbl">Savings tracking &amp; validation</td>
+            <td class="raci-b">C</td><td class="raci-g">A</td><td class="raci-n">I</td>
+            <td class="raci-n">I</td><td class="raci-n">I</td><td class="raci-g">R</td>
+          </tr>
+          <tr>
+            <td class="raci-lbl">TIC / Board reporting</td>
+            <td class="raci-g">A/R</td><td class="raci-g">R</td><td class="raci-b">C</td>
+            <td class="raci-b">C</td><td class="raci-n">I</td><td class="raci-b">C</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Actions register -->
+  <div class="cb0">
+    <div class="st">Application cost optimisation actions register &mdash; June 2026 (11 of 28 open actions itemised)</div>
+    <div class="act-row">
+      <div class="act-ref">ACO-101</div>
+      <div class="act-body">
+        <div class="act-title">Databricks idle cluster auto-termination &mdash; configure all 9 clusters (OPT-001)</div>
+        <div class="act-desc">Set auto-termination policy to 30 minutes on all 9 production Databricks clusters in Azure workspace. Azure Monitor shows 62% idle time, with 4 clusters running overnight. Platform Lead to apply config change. Estimated saving: R640k p.a. No service impact expected &mdash; jobs restart automatically on next trigger.</div>
+        <div class="act-meta"><span class="badge bc">Quick Win</span><span class="badge bm">Due: 30 Jun</span><span>Platform Lead</span></div>
+      </div>
+    </div>
+    <div class="act-row">
+      <div class="act-ref">ACO-102</div>
+      <div class="act-body">
+        <div class="act-title">Zoom contract 60-day notice &mdash; terminate August 2026 (OPT-002)</div>
+        <div class="act-desc">280 Zoom Business licences confirmed zero-use since Teams migration in Jan 2026. Legal to issue 60-day termination notice by 30 Jun to expire contract in Aug 2026. CIO approval required. Saving: R616k p.a. No user impact as Teams is fully deployed estate-wide.</div>
+        <div class="act-meta"><span class="badge bc">Quick Win</span><span class="badge bm">Due: 30 Jun</span><span>Legal / CIO</span></div>
+      </div>
+    </div>
+    <div class="act-row">
+      <div class="act-ref">ACO-103</div>
+      <div class="act-body">
+        <div class="act-title">Power BI Pro zombie licence reclaim &mdash; 196 inactive accounts (OPT-003)</div>
+        <div class="act-desc">IT Admin to remove Power BI Pro licence assignment from 196 accounts with zero activity in 90 days. List of inactive accounts extracted from Azure AD. Affected users will lose Pro access (none are active). Licences released back to pool and reduced at Aug renewal. Saving: R274k p.a.</div>
+        <div class="act-meta"><span class="badge bc">Quick Win</span><span class="badge bm">Due: 30 Jun</span><span>IT Admin / CIO</span></div>
+      </div>
+    </div>
+    <div class="act-row">
+      <div class="act-ref">ACO-104</div>
+      <div class="act-body">
+        <div class="act-title">Synapse SQL pool auto-pause configuration &mdash; business hours only (OPT-004)</div>
+        <div class="act-desc">Configure Synapse Analytics to auto-pause at 22:00 and resume at 06:30 daily. Pre-requisite: assess all overnight ETL pipeline schedules to confirm none require the SQL pool. Platform Lead to complete assessment by 30 Jun. If clear: configure auto-pause by 15 Jul. Saving: R480k p.a.</div>
+        <div class="act-meta"><span class="badge bc">Critical</span><span class="badge bm">Due: 15 Jul</span><span>Platform Lead / CDO</span></div>
+      </div>
+    </div>
+    <div class="act-row">
+      <div class="act-ref">ACO-105</div>
+      <div class="act-body">
+        <div class="act-title">Azure reserved instance conversion &mdash; CFO / CIO approval (OPT-008)</div>
+        <div class="act-desc">Convert 65% of Azure compute from PAYG to 1-year reserved instances. Upfront commitment: R1.2M. Annual saving: R840k. Break-even: month 4. CDO to present financial model to CFO and CIO by 15 Jul for decision at TIC. Approved funds to be committed before 31 Aug to capture Sep&ndash;Dec 2026 saving window.</div>
+        <div class="act-meta"><span class="badge bc">Critical</span><span class="badge bm">Decision: 16 Jul TIC</span><span>CDO / CFO / CIO</span></div>
+      </div>
+    </div>
+    <div class="act-row">
+      <div class="act-ref">ACO-106</div>
+      <div class="act-body">
+        <div class="act-title">Kronos Workforce decommission &mdash; unblock SAP HCM T&amp;A migration (OPT-005)</div>
+        <div class="act-desc">SAP HCM Time &amp; Attendance module must go live before last 12 Kronos users can be migrated. SAP programme team to confirm T&amp;A config complete by 31 Jul. HR Director to sign off on user acceptance testing. Kronos decommission target: Sep 2026. Every month of delay costs R113k (R1.36M / 12). Escalate to CHRO and CTO if Jul deadline not met.</div>
+        <div class="act-meta"><span class="badge bc">Critical</span><span class="badge bm">Due: 31 Jul</span><span>SAP Programme / CHRO / CTO</span></div>
+      </div>
+    </div>
+    <div class="act-row">
+      <div class="act-ref">ACO-107</div>
+      <div class="act-body">
+        <div class="act-title">CODA Financials decommission &mdash; complete data archival (OPT-006)</div>
+        <div class="act-desc">7-year GL historical data archival to SharePoint is blocked by SAP validation errors on 3 journal batches. Finance data team to resolve validation errors by 31 Jul. CFO to sign off on archive completeness certificate. CODA decommission target: Aug 2026. Cost of delay: R100k/month (R1.2M / 12).</div>
+        <div class="act-meta"><span class="badge bc">Critical</span><span class="badge bm">Due: 31 Jul</span><span>Finance Data Team / CFO</span></div>
+      </div>
+    </div>
+    <div class="act-row">
+      <div class="act-ref">ACO-108</div>
+      <div class="act-body">
+        <div class="act-title">Dimension Data managed services RFP &mdash; commence process for Dec 2026 renewal (OPT-010)</div>
+        <div class="act-desc">R18M p.a. managed network services contract expires Dec 2026. To avoid auto-renewal at current rates, RFP must be issued by Oct 2026 (90-day notice). CIO to approve RFP initiation by 31 Aug. Target saving: R2.0M p.a. through competitive tension or contract renegotiation.</div>
+        <div class="act-meta"><span class="badge bh">High</span><span class="badge bm">Due: 31 Aug</span><span>CIO / Procurement</span></div>
+      </div>
+    </div>
+    <div class="act-row">
+      <div class="act-ref">ACO-109</div>
+      <div class="act-body">
+        <div class="act-title">Mimecast vs M365 Defender security consolidation review (OPT-011)</div>
+        <div class="act-desc">CISO to complete feature parity assessment of M365 Defender P2 vs Mimecast Email Security. If Defender is sufficient, Mimecast to be terminated at Mar 2027 renewal. Potential saving: R4.7M p.a. (single largest opportunity). Assessment to CISO and CIO by 31 Jul. Decision tabled at Aug TIC.</div>
+        <div class="act-meta"><span class="badge bh">High</span><span class="badge bm">Due: 31 Jul</span><span>CISO / CIO</span></div>
+      </div>
+    </div>
+    <div class="act-row">
+      <div class="act-ref">ACO-110</div>
+      <div class="act-body">
+        <div class="act-title">Shadow IT audit &mdash; quarterly scan for unauthorised SaaS spend &mdash; <span class="badge bc">Overdue</span></div>
+        <div class="act-desc">Was due Mar 2026. Quarterly shadow-IT scan using Defender for Cloud Apps not completed. Basecamp discovery (OPT-R02) was found by accident, not by audit. CISO to run Defender CASB report and submit shadow-IT register to CIO by 31 Jul. Policy: all SaaS above R10k requires IT Procurement approval. Results to be tabled at TIC.</div>
+        <div class="act-meta"><span class="badge bh">High</span><span class="badge bc">Overdue: Mar 2026</span><span>CISO / IT Procurement</span></div>
+      </div>
+    </div>
+    <div class="act-row">
+      <div class="act-ref">ACO-111</div>
+      <div class="act-body">
+        <div class="act-title">EoS application risk briefing &mdash; CISO and CIO notification of 3 unsupported apps</div>
+        <div class="act-desc">Kronos, CODA, and Infor M3 are all operating beyond vendor end-of-support with no security patches available. CISO and CIO to be formally briefed at 5 Jul CFO/CIO review. Risk memo to Board ARC if decommission cannot be confirmed by Sep 2026. CRO to add to the technology risk register as Medium risks.</div>
+        <div class="act-meta"><span class="badge bc">Critical</span><span class="badge bm">Due: 5 Jul</span><span>CISO / CTO / CRO</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<section class="portfolio-about" id="about-this-portfolio">
+  <h2>About This Portfolio</h2>
+  <p><strong>Prepared by:</strong> Divan Gerber &mdash; Independent Portfolio Exercise.</p>
+  <p>This page is part of a self-directed learning project built to demonstrate practical Governance, Risk &amp; Compliance and IT Audit capability. &ldquo;MedRetail Group South Africa&rdquo; and its governance structures are fictional constructs created for this exercise. No real organization, department, employee, board, supplier contract, or confidential data is represented here, and the dashboard is a static design prototype, not a live system. Real product and vendor names (listed in the banner above) are scenario context only; every figure, end-of-support status and finding attributed to them is invented and says nothing about their actual products or pricing. Costs, savings and the committee decisions and roles shown are simulated scenario content, and no real application costs, licence savings or optimization results are claimed. This is not a role or office Divan Gerber has held.</p>
+</section>
+
+</body>
+</html>
